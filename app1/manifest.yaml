@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app1
+  # these are replica set labels
+  labels:
+    purpose: ingress-demo
+    project: roboshop
+    app: app1
+spec:
+  replicas: 2
+  selector:
+    # these labels are used to select pods
+    matchLabels:
+      purpose: ingress-demo
+      project: roboshop
+      app: app1
+  # pod definition
+  template:
+    metadata:
+      labels:
+        purpose: ingress-demo
+        project: roboshop
+        app: app1
+    spec:
+      containers:
+      - name: nginx
+        image: nareshungarala/app1:v1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app1
+spec:
+  selector:
+    purpose: ingress-demo
+    project: roboshop
+    app: app1
+  ports:
+  - protocol: TCP
+    port: 80 # service port
+    targetPort: 80 # container port
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app1
+  annotations:
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:336468392098:certificate/9fa019a5-3d9a-40a9-a861-fca6fe41de94
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/tags: Environment=dev,Project=roboshop
+    alb.ingress.kubernetes.io/target-type: ip
+    # Add controller-specific annotations here (e.g., for NGINX, AWS, GCP)
+    # The following is a common NGINX annotation example
+   
+spec:
+  # Specify the IngressClass name that this Ingress resource should use
+  ingressClassName: alb # Replace with your specific Ingress Controller class name
+  rules:
+  - host: "app1.nareshplace.fun"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: app1
+            port:
+              number: 80
+     
